@@ -146,15 +146,6 @@ function epay_capture($params)
         ];
     }
 
-	/*
-    $postFields = [
-        'token' => $remoteGatewayToken,
-        'cvv' => $cardCvv,
-        'invoice_number' => $invoiceId,
-        'amount' => $amount,
-        'currency' => $currencyCode,
-    ];
-*/
     // Perform API call to initiate capture.
 	$soap = new SoapClient("https://ssl.ditonlinebetalingssystem.dk/remote/subscription.asmx?wsdl");
 	$epay_params                   = array();
@@ -200,26 +191,6 @@ function epay_capture($params)
         'rawdata' => print_r($params, true).print_r($result_authorize_result, true)
     	];
 	}
-	
-	// $soap = new SoapClient("https://ssl.ditonlinebetalingssystem.dk/remote/subscription.asmx?wsdl");
-	// $epay_params                   = array();
-	// $epay_params['merchantnumber'] = 8014275;
-	// $epay_params['transactionid']  = $transactionid;
-	// $epay_params['amount']         = (string) $amount;
-	// $epay_params['pwd']            = $this->pwd;
-	// $epay_params['pbsResponse']    = '-1';
-	// $epay_params['epayresponse']   = '-1';
-	// $result = $soap->capture($epay_params);
-	
-    // Sample response data:
-	/*
-    $response = [
-        'success' => true,
-        'transaction_id' => 'ABC123',
-        'fee' => '1.23',
-        'token' => 'abc' . rand(100000, 999999),
-    ];
-    */
 }
 
 /**
@@ -289,37 +260,14 @@ function epay_remoteinput($params)
 	$epay_params["ownreceipt"] = 1;
 	$epay_params["hash"] = md5(implode("", array_values($epay_params)) . $params['md5key']);
 
-	// Full screen
-    // if(defined('ADMINAREA'))
-	// {	
-		$code = '
-		<form action="https://ssl.ditonlinebetalingssystem.dk/integration/ewindow/Default.aspx" method="post">';
-		foreach ($epay_params as $key => $value)
-		{
-			$code .= '<input type="hidden" name="' . $key . '" value="' . $value . '" />' . "\n";
-		}
-		// $code .= '<input type="submit" value="Open the ePay Payment Window">';
-		$code .= '</form>';
-	// }
-	// else
-	///
-	// Iframe
-	/*
-	{
-    	$code = '
-		<H1> Headline TEST TEST</H1>
-	
-    	<script charset="UTF-8" src="https://ssl.ditonlinebetalingssystem.dk/integration/ewindow/paymentwindow.js" type="text/javascript"></script>
-    	<div id="payment-div"></div>
-    	<script type="text/javascript">
-        	paymentwindow = new PaymentWindow('.json_encode($epay_params).');
-        	paymentwindow.append(\'payment-div\');
-        	paymentwindow.open();
-    	</script>
-		<H2>END TEST</H2>';
-	}
-	*/
-	///
+    $code = '
+    <form action="https://ssl.ditonlinebetalingssystem.dk/integration/ewindow/Default.aspx" method="post">';
+    foreach ($epay_params as $key => $value)
+    {
+        $code .= '<input type="hidden" name="' . $key . '" value="' . $value . '" />' . "\n";
+    }
+    // $code .= '<input type="submit" value="Open the ePay Payment Window">';
+    $code .= '</form>';
 
     return $code;
 }
@@ -349,98 +297,6 @@ function epay_remoteupdate($params) {
     </div>';
 }
 
-/*
-function epay_remoteupdate($params)
-{
-    // Gateway Configuration Parameters
-    $apiUsername = $params['apiUsername'];
-    $apiPassword = $params['apiPassword'];
-    $remoteStorageToken = $params['gatewayid'];
-    $testMode = $params['testMode'];
-
-    // Client Parameters
-    $clientId = $params['clientdetails']['id'];
-    $firstname = $params['clientdetails']['firstname'];
-    $lastname = $params['clientdetails']['lastname'];
-    $email = $params['clientdetails']['email'];
-    $address1 = $params['clientdetails']['address1'];
-    $address2 = $params['clientdetails']['address2'];
-    $city = $params['clientdetails']['city'];
-    $state = $params['clientdetails']['state'];
-    $postcode = $params['clientdetails']['postcode'];
-    $country = $params['clientdetails']['country'];
-    $phone = $params['clientdetails']['phonenumber'];
-    $payMethodId = $params['paymethodid'];
-
-    // System Parameters
-    $companyName = $params['companyname'];
-    $systemUrl = $params['systemurl'];
-    $returnUrl = $params['returnurl'];
-    $langPayNow = $params['langpaynow'];
-    $moduleDisplayName = $params['name'];
-    $moduleName = $params['paymentmethod'];
-    $whmcsVersion = $params['whmcsVersion'];
-
-    // Build a form which can be submitted to an iframe target to render
-    // the payment form.
-
-    $formAction = $systemUrl . 'demo/remote-iframe-demo.php';
-    $formFields = [
-        'api_username' => $apiUsername,
-        'card_token' => $remoteStorageToken,
-        'action' => 'update',
-        'invoice_id' => 0,
-        'amount' => 0,
-        'currency' => '',
-        'customer_id' => $clientId,
-        'first_name' => $firstname,
-        'last_name' => $lastname,
-        'email' => $email,
-        'address1' => $address1,
-        'address2' => $address2,
-        'city' => $city,
-        'state' => $state,
-        'postcode' => $postcode,
-        'country' => $country,
-        'phonenumber' => $phone,
-        'return_url' => $systemUrl . 'modules/gateways/callback/remoteinputgateway.php',
-        // Sample verification hash to protect against form tampering
-        'verification_hash' => sha1(
-            implode('|', [
-                $apiUsername,
-                $clientId,
-                0, // Invoice ID - there is no invoice for an update
-                0, // Amount - there is no amount when updating
-                '', // Currency Code - there is no currency when updating
-                $apiPassword,
-                $remoteStorageToken,
-            ])
-        ),
-        // The PayMethod ID will need to be available in the callback file after
-        // update. We will pass a custom variable here to enable that.
-        'custom_reference' => $payMethodId,
-    ];
-
-    $formOutput = '';
-    foreach ($formFields as $key => $value) {
-        $formOutput .= '<input type="hidden" name="' . $key . '" value="' . $value . '">' . PHP_EOL;
-    }
-
-    // This is a working example which posts to the file: demo/remote-iframe-demo.php
-    return '<div id="frmRemoteCardProcess" class="text-center">
-    <form method="post" action="' . $formAction . '" target="remoteUpdateIFrame">
-        ' . $formOutput . '
-        <noscript>
-            <input type="submit" value="Click here to continue &raquo;">
-        </noscript>
-    </form>
-    <iframe name="remoteUpdateIFrame" class="auth3d-area" width="90%" height="600" scrolling="auto" src="about:blank"></iframe>
-</div>
-<script>
-    setTimeout("autoSubmitFormByContainer(\'frmRemoteCardProcess\')", 1000);
-</script>';
-}
-*/
 
 /**
  * Admin status message.
